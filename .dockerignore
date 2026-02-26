@@ -3,3 +3,4 @@ myenv
 notebook
 architecture.txt
 README.md
+.pytest_cache
