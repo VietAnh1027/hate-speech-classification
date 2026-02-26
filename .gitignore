@@ -1,0 +1,5 @@
+myenv
+.vscode
+__pycache__
+hate-speech-model
+.pytest_cache
