@@ -1,11 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from huggingface_hub import snapshot_download
 import torch
 import torch.nn.functional as F
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from pyvi import ViTokenizer
 import os
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import asyncio
 
 app = FastAPI()
@@ -27,7 +27,7 @@ def checking_download(model_path):
 
 checking_download(model_path)
 
-classes = ["noram", "rude", "toxic"]
+classes = ["normal", "rude", "toxic"]
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 tokenizer = AutoTokenizer.from_pretrained(model_path)
 model = AutoModelForSequenceClassification.from_pretrained(model_path, num_labels=3)
@@ -43,16 +43,25 @@ def classify_comment(text):
         confident, cls_id = torch.max(probabilites, dim=1)
     return round(confident.item()*100, 2), cls_id
 
-class Comment(BaseModel):
+class RequestComment(BaseModel):
     user: str
-    cmt: str
+    comment: str = Field(..., min_length=1)
 
-@app.post("/predict")
-async def predict(request: Comment):
-    conf_score, cls_id = await asyncio.to_thread(classify_comment, request.cmt)
-    return {
-        "user": request.user,
-        "comment": request.cmt,
-        "type": classes[cls_id],
-        "confident": f"{conf_score:.2f}%"
-    }
+class ResponseComment(BaseModel):
+    user: str
+    comment: str
+    type: str
+    confident: float
+
+@app.post("/predict", response_model=ResponseComment)
+async def predict(request: RequestComment):
+    try:
+        conf_score, cls_id = await asyncio.to_thread(classify_comment, request.comment)
+        return {
+            "user": request.user,
+            "comment": request.comment,
+            "type": classes[cls_id],
+            "confident": conf_score
+        }
+    except Exception as e:
+        return HTTPException(500, detail=f"Lỗi server khi dự đoán, chi tiết: {e}")
