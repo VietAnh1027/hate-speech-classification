@@ -1,0 +1,10 @@
+hate-speech-classification/
+├── hate-speech-model/
+│   ├── model.safetensors
+│   ├── tokenizer_config.json
+│   └── ...
+├── notebooks/
+│   └── train_model.ipynb
+├── app/
+│   └── app.py
+└── README.md
