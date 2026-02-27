@@ -5,12 +5,16 @@ current_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.dirname(current_path)
 sys.path.insert(0, root_path)
 
-from src.main import app
+from src.main import app, classify_comment
 from fastapi.testclient import TestClient
+from unittest.mock import patch
 
 client = TestClient(app)
 
-def test_check_success():
+@patch("src.main.classify_comment")
+def test_check_success(mock_classify):
+    mock_classify.return_value = (0.95, 1)
+
     # Kiểm tra thành công
     response = client.post("/predict", json={"user": "a", "comment": "Tao là trò đùa của chúng mày à ?"})
     print(response)
